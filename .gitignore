@@ -1,3 +1,20 @@
+# Ignore everything by default. Only the files listed below are tracked,
+# so session transcripts, history, logs and caches can never be committed.
 *
-!CLAUDE.md
+
 !.gitignore
+!CLAUDE.md
+
+# Skills: each published skill must be allowlisted explicitly.
+!skills/
+skills/*
+!skills/changeset/
+!skills/changeset/**
+!skills/commit-and-push/
+!skills/commit-and-push/**
+!skills/github-pr/
+!skills/github-pr/**
+!skills/monitor-main-ci/
+!skills/monitor-main-ci/**
+!skills/work-on-issue/
+!skills/work-on-issue/**
