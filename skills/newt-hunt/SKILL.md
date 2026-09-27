@@ -7,20 +7,28 @@ description: Scaffold a random create-newt-app configuration, build a small toy 
 
 One pass: scaffold, build something small, record what broke. Findings go to a report; never file issues, push, or open PRs.
 
-## 1. Pick a config
+The argument is the path to a newt-app source checkout. If none was given, stop and ask for it. Call it `$SRC` below.
 
-Run `npm create --yes newt-app@latest -- --help` for the current flags. Pick one value per option at random. Use `--database postgres` only if `DATABASE_URL` is set.
+## 1. Update the source
+
+```bash
+git -C "$SRC" pull --ff-only
+(cd "$SRC" && pnpm install && pnpm --filter create-newt-app build)
+```
+
+If the pull fails (dirty tree, diverged branch), stop and report it. Don't stash, reset, or switch branches.
+
+## 2. Pick a config and scaffold
+
+Run `node "$SRC/packages/create-newt-app/dist/index.js" --help` for the current flags. Pick one value per option at random. Use `--database postgres` only if `DATABASE_URL` is set.
 
 Skip any combo already in `~/newt-hunt/runs/*/flags` from the last 24 hours.
 
-## 2. Scaffold the published release
-
 ```bash
 RUN=~/newt-hunt/runs/$(date +%Y%m%d-%H%M%S); mkdir -p "$RUN"
-npm view create-newt-app version > "$RUN/version"
-curl -fsSL https://raw.githubusercontent.com/zeevo/newt-app/main/scripts/smoke.sh -o "$RUN/smoke.sh"; chmod +x "$RUN/smoke.sh"
+git -C "$SRC" log -1 --format='%h %s' > "$RUN/commit"
 APP=$(mktemp -d); cd "$APP"
-npm create --yes newt-app@latest -- toy <flags> 2>&1 | tee "$RUN/scaffold.log"
+node "$SRC/packages/create-newt-app/dist/index.js" toy <flags> 2>&1 | tee "$RUN/scaffold.log"
 echo "<flags>" > "$RUN/flags"
 ```
 
@@ -28,7 +36,7 @@ echo "<flags>" > "$RUN/flags"
 
 Free the ports first: `lsof -ti :3000,:3001 | xargs kill 2>/dev/null`. A leftover server on :3000 makes smoke results lie.
 
-In `$APP/toy`, run `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, then `"$RUN/smoke.sh" "<flags>" .`. Save each output under `$RUN/`.
+In `$APP/toy`, run `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, then `"$SRC/scripts/smoke.sh" "<flags>" .`. Save each output under `$RUN/`.
 
 ## 4. Build a toy feature
 
@@ -44,7 +52,7 @@ Write `$RUN/findings.md`, one entry per finding:
 ### <title>
 - severity: bug | friction | improvement
 - source: scaffold | my toy code
-- version: <create-newt-app version>
+- commit: <contents of $RUN/commit>
 - flags: <flags>
 - repro: <commands>
 - evidence: <error text or file:line>
@@ -56,4 +64,4 @@ Only `source: scaffold` entries matter. Before listing one, run `gh issue list -
 
 Kill anything on :3000 and :3001, then `rm -rf "$APP"`.
 
-End with a three-line summary: version and flags, finding count by severity, and the report path.
+End with a three-line summary: commit and flags, finding count by severity, and the report path.
