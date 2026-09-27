@@ -9,28 +9,26 @@ One pass: scaffold, build something small, record what broke. Findings go to a r
 
 ## 1. Pick a config
 
-Run `node packages/create-newt-app/dist/index.js --help` from the repo root for the current flags. Pick one value per option at random. Use `--database postgres` only if `DATABASE_URL` is set.
+Run `npm create --yes newt-app@latest -- --help` for the current flags. Pick one value per option at random. Use `--database postgres` only if `DATABASE_URL` is set.
 
 Skip any combo already in `~/newt-hunt/runs/*/flags` from the last 24 hours.
 
-## 2. Scaffold from main
+## 2. Scaffold the published release
 
 ```bash
 RUN=~/newt-hunt/runs/$(date +%Y%m%d-%H%M%S); mkdir -p "$RUN"
-SRC=$(mktemp -d)/src; git -C ~/Projects/newt-app worktree add -f --detach "$SRC" origin/main
-(cd "$SRC" && pnpm install && pnpm --filter create-newt-app build)
+npm view create-newt-app version > "$RUN/version"
+curl -fsSL https://raw.githubusercontent.com/zeevo/newt-app/main/scripts/smoke.sh -o "$RUN/smoke.sh"; chmod +x "$RUN/smoke.sh"
 APP=$(mktemp -d); cd "$APP"
-node "$SRC/packages/create-newt-app/dist/index.js" toy <flags> 2>&1 | tee "$RUN/scaffold.log"
+npm create --yes newt-app@latest -- toy <flags> 2>&1 | tee "$RUN/scaffold.log"
 echo "<flags>" > "$RUN/flags"
 ```
-
-`git fetch` first so `origin/main` is current.
 
 ## 3. Check the untouched scaffold
 
 Free the ports first: `lsof -ti :3000,:3001 | xargs kill 2>/dev/null`. A leftover server on :3000 makes smoke results lie.
 
-In `$APP/toy`, run `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, then `"$SRC/scripts/smoke.sh" "<flags>" .`. Save each output under `$RUN/`.
+In `$APP/toy`, run `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, then `"$RUN/smoke.sh" "<flags>" .`. Save each output under `$RUN/`.
 
 ## 4. Build a toy feature
 
@@ -46,15 +44,16 @@ Write `$RUN/findings.md`, one entry per finding:
 ### <title>
 - severity: bug | friction | improvement
 - source: scaffold | my toy code
+- version: <create-newt-app version>
 - flags: <flags>
 - repro: <commands>
 - evidence: <error text or file:line>
 ```
 
-Only `source: scaffold` entries matter. Before listing one, run `gh issue list --state all --search "<keywords>"` and note any matching issue number.
+Only `source: scaffold` entries matter. Before listing one, run `gh issue list -R zeevo/newt-app --state all --search "<keywords>"` and note any matching issue number.
 
 ## 6. Clean up
 
-Kill anything on :3000 and :3001, then run `git -C ~/Projects/newt-app worktree remove --force "$SRC"` and `rm -rf "$APP"`.
+Kill anything on :3000 and :3001, then `rm -rf "$APP"`.
 
-End with a three-line summary: flags, finding count by severity, and the report path.
+End with a three-line summary: version and flags, finding count by severity, and the report path.
