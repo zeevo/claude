@@ -1,9 +1,9 @@
 ---
-name: gardner
+name: gardener
 description: Triage a project's open issues by trying to reproduce each one on the default branch, and close only those that are verifiably no longer reproducible. Use when asked to garden, prune, or clean up stale issues.
 ---
 
-# gardner
+# gardener
 
 Walk the open issues, try to reproduce each one on current code, and close the ones that are provably gone. Everything else is left untouched: no comments, labels, or edits on issues that stay open.
 
