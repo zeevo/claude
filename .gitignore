@@ -18,3 +18,5 @@ skills/*
 !skills/monitor-main-ci/**
 !skills/work-on-issue/
 !skills/work-on-issue/**
+!skills/newt-hunt/
+!skills/newt-hunt/**
